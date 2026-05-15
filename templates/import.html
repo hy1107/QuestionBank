@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}匯入題庫 — 題庫密室{% endblock %}
+{% block content %}
+<h1>匯入題庫</h1>
+<p>Excel 欄位順序必須為：<strong>題號、題目、選項A、選項B、選項C、選項D、答案</strong></p>
+<form action="/import/upload" method="post" enctype="multipart/form-data">
+  <div class="form-group">
+    <label>選擇 Excel 檔案（.xlsx）：</label>
+    <input type="file" name="excel_file" accept=".xlsx" required>
+  </div>
+  <button type="submit" class="btn">匯入題庫</button>
+</form>
+{% endblock %}

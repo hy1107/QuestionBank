@@ -1,5 +1,24 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head><meta charset="UTF-8"><title>題庫密室</title></head>
-<body><h1>題庫密室</h1></body>
-</html>
+{% extends "base.html" %}
+{% block title %}首頁 — 題庫密室{% endblock %}
+{% block content %}
+<h1>歡迎使用題庫密室</h1>
+<p>請選擇操作：</p>
+<div class="card-grid">
+  <a href="/parse" class="card">
+    <h2>PDF 解析</h2>
+    <p>上傳 PDF 試卷，解析後下載 Excel</p>
+  </a>
+  <a href="/import" class="card">
+    <h2>匯入題庫</h2>
+    <p>上傳 Excel 檔案，匯入題目到題庫</p>
+  </a>
+  <a href="/questions" class="card">
+    <h2>題庫管理</h2>
+    <p>瀏覽、搜尋、標記所有題目</p>
+  </a>
+  <a href="/export" class="card">
+    <h2>出題匯出</h2>
+    <p>篩選題目，匯出 Word 或 Excel 試卷</p>
+  </a>
+</div>
+{% endblock %}

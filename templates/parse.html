@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}PDF 解析 — 題庫密室{% endblock %}
+{% block content %}
+<h1>PDF 解析</h1>
+<form action="/parse/upload" method="post" enctype="multipart/form-data">
+  <div class="form-group">
+    <label>選擇 PDF 檔案：</label>
+    <input type="file" name="pdf_file" accept=".pdf" required>
+  </div>
+  <button type="submit" class="btn">開始解析</button>
+</form>
+
+{% if questions is defined %}
+<hr>
+<h2>解析結果（共 {{ questions|length }} 題，失敗 {{ failed }} 處）</h2>
+{% if failed > 0 %}
+  <p class="alert alert-warning">有 {{ failed }} 處無法解析，請下載 Excel 後手動補全。</p>
+{% endif %}
+<a href="{{ download_url }}" class="btn btn-success">下載 Excel</a>
+<table class="table">
+  <thead><tr><th>題號</th><th>題目</th><th>答案</th></tr></thead>
+  <tbody>
+    {% for q in questions %}
+    <tr>
+      <td>{{ q.original_no }}</td>
+      <td>{{ q.question[:60] }}{% if q.question|length > 60 %}...{% endif %}</td>
+      <td>{{ q.answer }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}
