@@ -2,7 +2,7 @@
 {% block title %}PDF 解析 — 題庫密室{% endblock %}
 {% block content %}
 <h1>PDF 解析</h1>
-<form action="/parse/upload" method="post" enctype="multipart/form-data">
+<form action="{{ url_for('parse_upload') }}" method="post" enctype="multipart/form-data">
   <div class="form-group">
     <label>選擇 PDF 檔案：</label>
     <input type="file" name="pdf_file" accept=".pdf" required>

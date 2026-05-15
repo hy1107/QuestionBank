@@ -10,6 +10,7 @@ def create_app(testing=False):
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev')
     app.config['UPLOAD_FOLDER'] = 'uploads'
+    app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32 MB
     if testing:
         app.config['TESTING'] = True
 
@@ -31,13 +32,23 @@ def create_app(testing=False):
         if 'pdf_file' not in request.files or request.files['pdf_file'].filename == '':
             return ('No file', 400)
         f = request.files['pdf_file']
+        if not f.filename.lower().endswith('.pdf'):
+            flash('請上傳 PDF 格式的檔案', 'error')
+            return redirect(url_for('parse_page'))
         filename = f'{uuid.uuid4()}.pdf'
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         f.save(filepath)
-        questions = parse_pdf(filepath)
-        out_name = f'{uuid.uuid4()}.xlsx'
-        out_path = os.path.join(app.config['UPLOAD_FOLDER'], out_name)
-        questions_to_excel(questions, out_path)
+        try:
+            questions = parse_pdf(filepath)
+            out_name = f'{uuid.uuid4()}.xlsx'
+            out_path = os.path.join(app.config['UPLOAD_FOLDER'], out_name)
+            questions_to_excel(questions, out_path)
+        except Exception as e:
+            flash(f'PDF 解析失敗：{e}', 'error')
+            return redirect(url_for('parse_page'))
+        finally:
+            if os.path.exists(filepath):
+                os.unlink(filepath)
         return render_template('parse.html', questions=questions, failed=0, download_url=url_for('download_file', filename=out_name))
 
     @app.route('/download/<filename>')
@@ -54,14 +65,20 @@ def create_app(testing=False):
         if 'excel_file' not in request.files or request.files['excel_file'].filename == '':
             return ('No file', 400)
         f = request.files['excel_file']
+        if not f.filename.lower().endswith('.xlsx'):
+            flash('請上傳 .xlsx 格式的 Excel 檔案', 'error')
+            return redirect(url_for('import_page'))
         filename = f'{uuid.uuid4()}.xlsx'
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         f.save(filepath)
         try:
             questions = excel_to_questions(filepath)
-        except ValueError as e:
-            flash(str(e), 'error')
+        except Exception as e:
+            flash(f'匯入失敗：{e}', 'error')
             return redirect(url_for('import_page'))
+        finally:
+            if os.path.exists(filepath):
+                os.unlink(filepath)
         for q in questions:
             q['source_file'] = f.filename
             insert_question(None, q)
