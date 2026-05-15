@@ -2,7 +2,7 @@ import pytest
 import sqlite3
 import tempfile
 import os
-from db import init_db, insert_question, get_all_questions, get_question_by_id, update_question_tags, delete_question
+from db import init_db, insert_question, get_all_questions, get_question_by_id, update_question, update_question_tags, delete_question
 
 @pytest.fixture
 def db_path(tmp_path):
@@ -71,3 +71,34 @@ def test_delete_question(db_path):
     qid = insert_question(db_path, q)
     delete_question(db_path, qid)
     assert get_question_by_id(db_path, qid) is None
+
+def test_delete_question_removes_tags(db_path):
+    q = {
+        'original_no': '5', 'question': '刪除含標籤題', 'option_a': 'A',
+        'option_b': 'B', 'option_c': 'C', 'option_d': 'D',
+        'answer': 'A', 'subject': '', 'chapter': '', 'difficulty': 'easy',
+        'source_file': 'test.xlsx',
+    }
+    qid = insert_question(db_path, q)
+    update_question_tags(db_path, qid, ['重要'])
+    delete_question(db_path, qid)
+    # Verify orphaned tags are gone
+    import sqlite3 as _sqlite3
+    conn = _sqlite3.connect(db_path)
+    orphans = conn.execute('SELECT * FROM tags WHERE question_id=?', (qid,)).fetchall()
+    conn.close()
+    assert len(orphans) == 0
+
+def test_update_question(db_path):
+    q = {
+        'original_no': '6', 'question': '更新測試', 'option_a': 'A',
+        'option_b': 'B', 'option_c': 'C', 'option_d': 'D',
+        'answer': 'A', 'subject': '', 'chapter': '', 'difficulty': 'easy',
+        'source_file': 'test.xlsx',
+    }
+    qid = insert_question(db_path, q)
+    update_question(db_path, qid, {'subject': '科學', 'chapter': '第二章', 'difficulty': 'hard'})
+    result = get_question_by_id(db_path, qid)
+    assert result['subject'] == '科學'
+    assert result['chapter'] == '第二章'
+    assert result['difficulty'] == 'hard'

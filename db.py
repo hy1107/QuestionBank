@@ -1,11 +1,11 @@
 import sqlite3
-from datetime import datetime
 
 DB_PATH = 'questions.db'
 
 def get_conn(db_path=None):
     conn = sqlite3.connect(db_path or DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute('PRAGMA foreign_keys = ON')
     return conn
 
 def init_db(db_path=None):
