@@ -1,5 +1,6 @@
 import os
 from flask import Flask, render_template
+from db import init_db
 
 def create_app(testing=False):
     app = Flask(__name__)
@@ -7,6 +8,9 @@ def create_app(testing=False):
     app.config['UPLOAD_FOLDER'] = 'uploads'
     if testing:
         app.config['TESTING'] = True
+
+    if not testing:
+        init_db()
 
     @app.route('/')
     def index():
