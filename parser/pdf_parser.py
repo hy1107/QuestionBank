@@ -3,7 +3,8 @@ import pdfplumber
 
 def parse_text_to_questions(text):
     question_pattern = re.compile(r'^\(([ABCD])\)\s*(\d+)[.、．]\s*(.+)')
-    option_pattern = re.compile(r'^\s+\(([ABCD])\)\s+(.+)')
+    # Option lines: (A/B/C/D) followed by text that is NOT a question number
+    option_pattern = re.compile(r'^\(([ABCD])\)\s+(?!\d+[.、．])(.+)')
 
     questions = []
     lines = text.split('\n')
@@ -23,7 +24,7 @@ def parse_text_to_questions(text):
         # Collect continuation lines and options
         options = {}
         while i < len(lines):
-            line = lines[i]
+            line = lines[i].strip()
             opt_m = option_pattern.match(line)
             if opt_m:
                 opt_letter = opt_m.group(1)
@@ -34,10 +35,10 @@ def parse_text_to_questions(text):
                 i += 1
                 if opt_letter == 'D':
                     break
-            elif re.match(r'^\(([ABCD])\)\s*\d+[.、．]', line.strip()):
+            elif re.match(r'^\(([ABCD])\)\s*\d+[.、．]', line):
                 break
-            elif line.strip():
-                question_text += ' ' + line.strip()
+            elif line:
+                question_text += ' ' + line
                 i += 1
             else:
                 i += 1
