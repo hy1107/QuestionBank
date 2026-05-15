@@ -135,7 +135,7 @@ def create_app(testing=False):
         }.items() if v}
 
         if ids:
-            questions = [get_question_by_id(None, i) for i in ids if get_question_by_id(None, i)]
+            questions = [q for q in (get_question_by_id(None, i) for i in ids) if q]
         else:
             questions = get_all_questions(None, filters)
 
