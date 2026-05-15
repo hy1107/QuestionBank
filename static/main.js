@@ -1,3 +1,12 @@
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // Questions page
 function loadQuestions() {
   const keyword = document.getElementById('search')?.value || '';
@@ -13,15 +22,15 @@ function renderQuestions(questions) {
   tbody.innerHTML = questions.map(q => `
     <tr>
       <td><input type="checkbox" class="q-check" value="${q.id}"></td>
-      <td>${q.original_no}</td>
-      <td title="${q.question}">${q.question.substring(0, 50)}${q.question.length > 50 ? '...' : ''}</td>
-      <td>${q.answer}</td>
+      <td>${escapeHtml(q.original_no)}</td>
+      <td title="${escapeHtml(q.question)}">${escapeHtml(q.question.substring(0, 50))}${q.question.length > 50 ? '...' : ''}</td>
+      <td>${escapeHtml(q.answer)}</td>
       <td>
         <select onchange="updateField(${q.id}, 'difficulty', this.value)">
           ${['easy','medium','hard'].map(d => `<option value="${d}" ${q.difficulty===d?'selected':''}>${{easy:'簡單',medium:'中等',hard:'困難'}[d]}</option>`).join('')}
         </select>
       </td>
-      <td><input type="text" value="${q.subject||''}" placeholder="科目" onblur="updateField(${q.id}, 'subject', this.value)" style="width:80px"></td>
+      <td><input type="text" value="${escapeHtml(q.subject||'')}" data-original="${escapeHtml(q.subject||'')}" placeholder="科目" onblur="if(this.value!==this.dataset.original){updateField(${q.id},'subject',this.value);this.dataset.original=this.value;}" style="width:80px"></td>
       <td><button onclick="deleteQuestion(${q.id})" class="btn" style="background:#e74c3c;padding:.25rem .6rem;font-size:.8rem">刪除</button></td>
     </tr>
   `).join('');
@@ -33,13 +42,14 @@ function updateField(id, field, value) {
     method: 'PATCH',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({[field]: value})
-  });
+  }).catch(() => alert('儲存失敗，請重試'));
 }
 
 function deleteQuestion(id) {
   if (!confirm('確定刪除這題？')) return;
   fetch(`/api/questions/${id}`, {method: 'DELETE'})
-    .then(() => loadQuestions());
+    .then(() => loadQuestions())
+    .catch(() => alert('刪除失敗，請重試'));
 }
 
 function updateSelectedCount() {
@@ -83,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (params.count) result = result.slice(0, parseInt(params.count));
           document.getElementById('preview-count').textContent = result.length;
           document.getElementById('preview-list').innerHTML =
-            result.map(q => `<li>${q.original_no}. ${q.question.substring(0, 60)}</li>`).join('');
+            result.map(q => `<li>${escapeHtml(q.original_no)}. ${escapeHtml(q.question.substring(0, 60))}</li>`).join('');
           document.getElementById('preview-section').style.display = 'block';
           downloadBtn._questions = result;
         });
