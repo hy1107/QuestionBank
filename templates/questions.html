@@ -2,4 +2,24 @@
 {% block title %}題庫管理 — 題庫密室{% endblock %}
 {% block content %}
 <h1>題庫管理</h1>
+<div class="toolbar">
+  <input type="text" id="search" placeholder="搜尋題目..." class="mock-input">
+  <select id="filter-difficulty">
+    <option value="">所有難度</option>
+    <option value="easy">簡單</option>
+    <option value="medium">中等</option>
+    <option value="hard">困難</option>
+  </select>
+  <button id="export-selected" class="btn">加入出題清單 (<span id="selected-count">0</span>)</button>
+</div>
+<table class="table" id="questions-table">
+  <thead>
+    <tr>
+      <th><input type="checkbox" id="select-all"></th>
+      <th>題號</th><th>題目</th><th>答案</th><th>難度</th><th>科目</th><th>操作</th>
+    </tr>
+  </thead>
+  <tbody id="questions-body"></tbody>
+</table>
+<script src="{{ url_for('static', filename='main.js') }}"></script>
 {% endblock %}

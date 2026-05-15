@@ -14,8 +14,7 @@ def create_app(testing=False):
     if testing:
         app.config['TESTING'] = True
 
-    if not testing:
-        init_db()
+    init_db()
 
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -92,6 +91,73 @@ def create_app(testing=False):
     @app.route('/export')
     def export_page():
         return render_template('export.html')
+
+    @app.route('/api/questions')
+    def api_questions():
+        filters = {
+            'keyword': request.args.get('keyword', ''),
+            'subject': request.args.get('subject', ''),
+            'difficulty': request.args.get('difficulty', ''),
+            'no_from': request.args.get('no_from', ''),
+            'no_to': request.args.get('no_to', ''),
+        }
+        filters = {k: v for k, v in filters.items() if v}
+        questions = get_all_questions(None, filters)
+        return jsonify(questions)
+
+    @app.route('/api/questions/<int:qid>', methods=['PATCH'])
+    def api_update_question(qid):
+        data = request.get_json()
+        update_question(None, qid, data)
+        if 'tags' in data:
+            update_question_tags(None, qid, data['tags'])
+        return jsonify({'ok': True})
+
+    @app.route('/api/questions/<int:qid>', methods=['DELETE'])
+    def api_delete_question(qid):
+        delete_question(None, qid)
+        return jsonify({'ok': True})
+
+    @app.route('/export/download', methods=['POST'])
+    def export_download():
+        data = request.get_json()
+        ids = data.get('ids', [])
+        fmt = data.get('format', 'word')
+        show_answers = data.get('show_answers', False)
+        count = data.get('count')
+        order = data.get('order', 'sequential')
+
+        filters = {k: v for k, v in {
+            'subject': data.get('subject', ''),
+            'difficulty': data.get('difficulty', ''),
+            'no_from': data.get('no_from', ''),
+            'no_to': data.get('no_to', ''),
+        }.items() if v}
+
+        if ids:
+            questions = [get_question_by_id(None, i) for i in ids if get_question_by_id(None, i)]
+        else:
+            questions = get_all_questions(None, filters)
+
+        if order == 'random':
+            import random
+            random.shuffle(questions)
+
+        if count:
+            questions = questions[:int(count)]
+
+        if not questions:
+            return ('No questions selected', 400)
+
+        out_name = f'{uuid.uuid4()}.{"docx" if fmt == "word" else "xlsx"}'
+        out_path = os.path.join(app.config['UPLOAD_FOLDER'], out_name)
+
+        if fmt == 'word':
+            export_to_word(questions, out_path, show_answers=show_answers)
+        else:
+            questions_to_excel(questions, out_path)
+
+        return jsonify({'download_url': url_for('download_file', filename=out_name)})
 
     return app
 

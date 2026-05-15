@@ -2,4 +2,55 @@
 {% block title %}出題匯出 — 題庫密室{% endblock %}
 {% block content %}
 <h1>出題匯出</h1>
+<form id="export-form">
+  <div class="form-row">
+    <div class="form-group">
+      <label>題數（留空為全選）：</label>
+      <input type="number" name="count" min="1" placeholder="例如：50">
+    </div>
+    <div class="form-group">
+      <label>題號範圍：</label>
+      <input type="number" name="no_from" placeholder="從" min="1">
+      <span>～</span>
+      <input type="number" name="no_to" placeholder="到" min="1">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>科目：</label>
+      <input type="text" name="subject" placeholder="留空為全部">
+    </div>
+    <div class="form-group">
+      <label>難度：</label>
+      <select name="difficulty">
+        <option value="">全部</option>
+        <option value="easy">簡單</option>
+        <option value="medium">中等</option>
+        <option value="hard">困難</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>排列方式：</label>
+      <select name="order">
+        <option value="random">隨機</option>
+        <option value="sequential">按題號順序</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label>匯出格式：</label>
+    <label><input type="radio" name="format" value="word" checked> Word (.docx)</label>
+    <label><input type="radio" name="format" value="excel"> Excel (.xlsx)</label>
+  </div>
+  <div class="form-group">
+    <label><input type="checkbox" name="show_answers"> 含答案</label>
+  </div>
+  <button type="button" id="preview-btn" class="btn">預覽題目</button>
+</form>
+<div id="preview-section" style="display:none">
+  <h2>預覽（共 <span id="preview-count">0</span> 題）</h2>
+  <ul id="preview-list"></ul>
+  <button type="button" id="download-btn" class="btn btn-success">確認並下載</button>
+</div>
+<script src="{{ url_for('static', filename='main.js') }}"></script>
 {% endblock %}
