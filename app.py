@@ -3,7 +3,7 @@ from flask import Flask, render_template
 
 def create_app(testing=False):
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'dev'
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev')
     app.config['UPLOAD_FOLDER'] = 'uploads'
     if testing:
         app.config['TESTING'] = True

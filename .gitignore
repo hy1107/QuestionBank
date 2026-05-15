@@ -1,6 +1,7 @@
 questions.db
 uploads/*
 !uploads/.gitkeep
-__pycache__/
-*.pyc
+**/__pycache__/
+**/*.pyc
 .env
+.pytest_cache/
