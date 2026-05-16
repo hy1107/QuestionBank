@@ -2,7 +2,7 @@ import pytest
 import sqlite3
 import tempfile
 import os
-from db import init_db, insert_question, get_all_questions, get_question_by_id, update_question, update_question_tags, delete_question
+from db import init_db, insert_question, get_all_questions, get_question_by_id, update_question, update_question_tags, delete_question, save_quiz_result, get_quiz_result
 
 @pytest.fixture
 def db_path(tmp_path):
@@ -102,3 +102,45 @@ def test_update_question(db_path):
     assert result['subject'] == '科學'
     assert result['chapter'] == '第二章'
     assert result['difficulty'] == 'hard'
+
+def test_init_creates_quiz_result_table(db_path):
+    conn = sqlite3.connect(db_path)
+    tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+    names = [t[0] for t in tables]
+    assert 'quiz_result' in names
+    conn.close()
+
+def test_save_quiz_result_stores_records(db_path):
+    q = {
+        'original_no': '1', 'question': '題目', 'option_a': 'A',
+        'option_b': 'B', 'option_c': 'C', 'option_d': 'D',
+        'answer': 'A', 'subject': '', 'chapter': '', 'difficulty': 'easy',
+        'source_file': 'test.xlsx',
+    }
+    qid = insert_question(db_path, q)
+    results = [{'question_id': qid, 'user_answer': 'A', 'is_correct': 1}]
+    save_quiz_result(db_path, results)
+    rows = get_quiz_result(db_path)
+    assert len(rows) == 1
+    assert rows[0]['user_answer'] == 'A'
+    assert rows[0]['is_correct'] == 1
+    assert rows[0]['question'] == '題目'
+    assert rows[0]['answer'] == 'A'
+
+def test_save_quiz_result_overwrites_previous(db_path):
+    q = {
+        'original_no': '1', 'question': '題目', 'option_a': 'A',
+        'option_b': 'B', 'option_c': 'C', 'option_d': 'D',
+        'answer': 'B', 'subject': '', 'chapter': '', 'difficulty': 'easy',
+        'source_file': 'test.xlsx',
+    }
+    qid = insert_question(db_path, q)
+    save_quiz_result(db_path, [{'question_id': qid, 'user_answer': 'A', 'is_correct': 0}])
+    save_quiz_result(db_path, [{'question_id': qid, 'user_answer': 'B', 'is_correct': 1}])
+    rows = get_quiz_result(db_path)
+    assert len(rows) == 1
+    assert rows[0]['user_answer'] == 'B'
+
+def test_get_quiz_result_empty(db_path):
+    rows = get_quiz_result(db_path)
+    assert rows == []

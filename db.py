@@ -32,6 +32,13 @@ def init_db(db_path=None):
             tag TEXT NOT NULL,
             FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
         );
+        CREATE TABLE IF NOT EXISTS quiz_result (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            question_id INTEGER NOT NULL,
+            user_answer TEXT NOT NULL,
+            is_correct INTEGER NOT NULL,
+            taken_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
     ''')
     conn.commit()
     conn.close()
@@ -131,3 +138,30 @@ def delete_question(db_path=None, qid=None):
     conn.execute('DELETE FROM questions WHERE id=?', (qid,))
     conn.commit()
     conn.close()
+
+def save_quiz_result(db_path=None, results=None):
+    if results is None:
+        db_path, results = DB_PATH, db_path
+    conn = get_conn(db_path)
+    conn.execute('DELETE FROM quiz_result')
+    for r in results:
+        conn.execute(
+            'INSERT INTO quiz_result (question_id, user_answer, is_correct) VALUES (?,?,?)',
+            (r['question_id'], r['user_answer'], r['is_correct'])
+        )
+    conn.commit()
+    conn.close()
+
+def get_quiz_result(db_path=None):
+    if db_path is None:
+        db_path = DB_PATH
+    conn = get_conn(db_path)
+    rows = conn.execute('''
+        SELECT qr.question_id, qr.user_answer, qr.is_correct, qr.taken_at,
+               q.question, q.answer, q.option_a, q.option_b, q.option_c, q.option_d
+        FROM quiz_result qr
+        JOIN questions q ON qr.question_id = q.id
+        ORDER BY qr.id
+    ''').fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
