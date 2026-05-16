@@ -227,6 +227,9 @@ def create_app(testing=False):
     @app.route('/quiz/all/submit', methods=['POST'])
     def quiz_all_submit():
         questions = get_all_questions()
+        if not questions:
+            flash('題庫目前沒有題目', 'error')
+            return redirect(url_for('quiz_page'))
         results = []
         for q in questions:
             user_ans = request.form.get(f'answer_{q["id"]}', '')

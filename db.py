@@ -37,7 +37,8 @@ def init_db(db_path=None):
             question_id INTEGER NOT NULL,
             user_answer TEXT NOT NULL,
             is_correct INTEGER NOT NULL,
-            taken_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            taken_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
         );
     ''')
     conn.commit()
