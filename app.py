@@ -175,7 +175,7 @@ def create_app(testing=False):
             index = session.get('quiz_index', 0)
             answers = session.get('quiz_answers', {})
 
-            if not qids:
+            if not qids or index >= len(qids):
                 return redirect(url_for('quiz_page'))
 
             answer = request.form.get('answer', '')
