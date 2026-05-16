@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}線上練習 - 題庫密室{% endblock %}
+{% block content %}
+<h2>線上練習</h2>
+<p>目前題庫共 <strong>{{ total }}</strong> 題</p>
+<div class="card-grid">
+  <div class="card">
+    <h3>逐題作答</h3>
+    <p>一次顯示一題，按「下一題」推進，不支援回上一題。</p>
+    <a href="{{ url_for('quiz_one') }}" class="btn">開始作答</a>
+  </div>
+  <div class="card">
+    <h3>全部作答</h3>
+    <p>所有題目同頁顯示，最後一次整批送出。</p>
+    <a href="{{ url_for('quiz_all') }}" class="btn">開始作答</a>
+  </div>
+</div>
+{% if has_result %}
+<p style="margin-top:1rem"><a href="{{ url_for('quiz_result') }}">查看上次結果</a></p>
+{% endif %}
+{% endblock %}

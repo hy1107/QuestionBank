@@ -1,7 +1,9 @@
 import os
 import uuid
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify
-from db import init_db, insert_question, get_all_questions, get_question_by_id, update_question, update_question_tags, delete_question
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify, session
+from db import (init_db, insert_question, get_all_questions, get_question_by_id,
+                update_question, update_question_tags, delete_question,
+                save_quiz_result, get_quiz_result)
 from parser.pdf_parser import parse_pdf
 from parser.excel_handler import questions_to_excel, excel_to_questions
 from exporter.paper_exporter import export_to_word
@@ -158,6 +160,94 @@ def create_app(testing=False):
             questions_to_excel(questions, out_path)
 
         return jsonify({'download_url': url_for('download_file', filename=out_name)})
+
+    @app.route('/quiz')
+    def quiz_page():
+        questions = get_all_questions()
+        total = len(questions)
+        has_result = bool(get_quiz_result())
+        return render_template('quiz.html', total=total, has_result=has_result)
+
+    @app.route('/quiz/one', methods=['GET', 'POST'])
+    def quiz_one():
+        if request.method == 'POST':
+            qids = session.get('quiz_questions', [])
+            index = session.get('quiz_index', 0)
+            answers = session.get('quiz_answers', {})
+
+            if not qids:
+                return redirect(url_for('quiz_page'))
+
+            answer = request.form.get('answer', '')
+            answers[str(qids[index])] = answer
+            session['quiz_answers'] = answers
+
+            next_index = index + 1
+            session['quiz_index'] = next_index
+
+            if next_index >= len(qids):
+                questions = get_all_questions()
+                qmap = {q['id']: q for q in questions}
+                results = []
+                for qid_str, user_ans in answers.items():
+                    qid = int(qid_str)
+                    q = qmap.get(qid)
+                    if q:
+                        results.append({
+                            'question_id': qid,
+                            'user_answer': user_ans,
+                            'is_correct': 1 if user_ans == q['answer'] else 0
+                        })
+                save_quiz_result(None, results)
+                session.pop('quiz_questions', None)
+                session.pop('quiz_index', None)
+                session.pop('quiz_answers', None)
+                return redirect(url_for('quiz_result'))
+            else:
+                q = get_question_by_id(None, qids[next_index])
+                return render_template('quiz_one.html', question=q,
+                                       index=next_index, total=len(qids))
+
+        # GET: start fresh
+        questions = get_all_questions()
+        if not questions:
+            flash('題庫目前沒有題目', 'error')
+            return redirect(url_for('quiz_page'))
+        session['quiz_questions'] = [q['id'] for q in questions]
+        session['quiz_index'] = 0
+        session['quiz_answers'] = {}
+        return render_template('quiz_one.html', question=questions[0],
+                               index=0, total=len(questions))
+
+    @app.route('/quiz/all')
+    def quiz_all():
+        questions = get_all_questions()
+        return render_template('quiz_all.html', questions=questions)
+
+    @app.route('/quiz/all/submit', methods=['POST'])
+    def quiz_all_submit():
+        questions = get_all_questions()
+        results = []
+        for q in questions:
+            user_ans = request.form.get(f'answer_{q["id"]}', '')
+            results.append({
+                'question_id': q['id'],
+                'user_answer': user_ans,
+                'is_correct': 1 if user_ans == q['answer'] else 0
+            })
+        save_quiz_result(None, results)
+        return redirect(url_for('quiz_result'))
+
+    @app.route('/quiz/result')
+    def quiz_result():
+        results = get_quiz_result()
+        if not results:
+            return redirect(url_for('quiz_page'))
+        correct = sum(1 for r in results if r['is_correct'])
+        total = len(results)
+        pct = round(correct / total * 100) if total else 0
+        return render_template('quiz_result.html', results=results,
+                               correct=correct, total=total, pct=pct)
 
     return app
 

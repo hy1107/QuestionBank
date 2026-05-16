@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}逐題作答 - 題庫密室{% endblock %}
+{% block content %}
+<div style="margin-bottom:1rem">
+  <span>第 {{ index + 1 }} 題 / 共 {{ total }} 題</span>
+  <progress value="{{ index + 1 }}" max="{{ total }}" style="width:100%;display:block;margin-top:.5rem"></progress>
+</div>
+<div class="card">
+  <p style="font-size:1.1rem;margin-bottom:1rem">{{ question.question }}</p>
+  <form method="post" action="{{ url_for('quiz_one') }}">
+    <div class="form-group">
+      <label style="display:block;margin-bottom:.5rem">
+        <input type="radio" name="answer" value="A" required> (A) {{ question.option_a }}
+      </label>
+      <label style="display:block;margin-bottom:.5rem">
+        <input type="radio" name="answer" value="B"> (B) {{ question.option_b }}
+      </label>
+      <label style="display:block;margin-bottom:.5rem">
+        <input type="radio" name="answer" value="C"> (C) {{ question.option_c }}
+      </label>
+      <label style="display:block;margin-bottom:.5rem">
+        <input type="radio" name="answer" value="D"> (D) {{ question.option_d }}
+      </label>
+    </div>
+    <button type="submit" class="btn">
+      {% if index + 1 == total %}完成作答{% else %}下一題{% endif %}
+    </button>
+  </form>
+</div>
+{% endblock %}

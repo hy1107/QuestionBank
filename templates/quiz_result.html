@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}作答結果 - 題庫密室{% endblock %}
+{% block content %}
+<h2>作答結果</h2>
+<div class="card" style="margin-bottom:1.5rem;font-size:1.2rem">
+  答對 <strong>{{ correct }}</strong> / 共 <strong>{{ total }}</strong> 題
+  &nbsp;|&nbsp; 正確率 <strong>{{ pct }}%</strong>
+</div>
+{% for r in results %}
+<div class="card" style="margin-bottom:.75rem">
+  <p style="margin-bottom:.5rem">{{ loop.index }}. {{ r.question }}</p>
+  {% if r.is_correct %}
+  <p style="color:green;margin:0">你的答案：{{ r.user_answer }} ✓</p>
+  {% else %}
+  <p style="color:red;margin:0">你的答案：{{ r.user_answer }} ✗</p>
+  <p style="margin:.25rem 0 0">正確答案：{{ r.answer }}</p>
+  {% endif %}
+</div>
+{% endfor %}
+<div style="margin-top:1.5rem">
+  <a href="{{ url_for('quiz_page') }}" class="btn">再次作答</a>
+</div>
+{% endblock %}
