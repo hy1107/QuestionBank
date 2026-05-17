@@ -82,6 +82,9 @@ def get_all_questions(db_path=None, filters=None):
         if filters.get('no_from') and filters.get('no_to'):
             clauses.append('CAST(original_no AS INTEGER) BETWEEN ? AND ?')
             params.extend([int(filters['no_from']), int(filters['no_to'])])
+        if filters.get('source_file'):
+            clauses.append('source_file = ?')
+            params.append(filters['source_file'])
         if clauses:
             query += ' WHERE ' + ' AND '.join(clauses)
     rows = conn.execute(query, params).fetchall()
@@ -166,3 +169,23 @@ def get_quiz_result(db_path=None):
     ''').fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+def get_source_files(db_path=None):
+    if db_path is None:
+        db_path = DB_PATH
+    conn = get_conn(db_path)
+    rows = conn.execute(
+        "SELECT DISTINCT source_file FROM questions WHERE source_file != '' ORDER BY source_file"
+    ).fetchall()
+    conn.close()
+    return [r['source_file'] for r in rows]
+
+def delete_questions_by_source(db_path=None, source_file=None):
+    if source_file is None:
+        db_path, source_file = DB_PATH, db_path
+    conn = get_conn(db_path)
+    result = conn.execute('DELETE FROM questions WHERE source_file = ?', (source_file,))
+    deleted = result.rowcount
+    conn.commit()
+    conn.close()
+    return deleted

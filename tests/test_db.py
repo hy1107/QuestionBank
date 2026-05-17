@@ -2,7 +2,10 @@ import pytest
 import sqlite3
 import tempfile
 import os
-from db import init_db, insert_question, get_all_questions, get_question_by_id, update_question, update_question_tags, delete_question, save_quiz_result, get_quiz_result
+from db import (init_db, insert_question, get_all_questions, get_question_by_id,
+                update_question, update_question_tags, delete_question,
+                save_quiz_result, get_quiz_result,
+                get_source_files, delete_questions_by_source)
 
 @pytest.fixture
 def db_path(tmp_path):
@@ -144,3 +147,48 @@ def test_save_quiz_result_overwrites_previous(db_path):
 def test_get_quiz_result_empty(db_path):
     rows = get_quiz_result(db_path)
     assert rows == []
+
+def _make_question(original_no, source_file='test.xlsx'):
+    return {
+        'original_no': original_no, 'question': f'題目{original_no}',
+        'option_a': 'A', 'option_b': 'B', 'option_c': 'C', 'option_d': 'D',
+        'answer': 'A', 'subject': '', 'chapter': '', 'difficulty': 'easy',
+        'source_file': source_file,
+    }
+
+def test_get_source_files_returns_distinct_sorted(db_path):
+    insert_question(db_path, _make_question('1', 'beta.xlsx'))
+    insert_question(db_path, _make_question('2', 'alpha.xlsx'))
+    insert_question(db_path, _make_question('3', 'beta.xlsx'))
+    sources = get_source_files(db_path)
+    assert sources == ['alpha.xlsx', 'beta.xlsx']
+
+def test_get_source_files_excludes_empty(db_path):
+    insert_question(db_path, _make_question('1', ''))
+    insert_question(db_path, _make_question('2', 'file.xlsx'))
+    sources = get_source_files(db_path)
+    assert sources == ['file.xlsx']
+
+def test_get_source_files_empty_db(db_path):
+    assert get_source_files(db_path) == []
+
+def test_delete_questions_by_source_removes_correct_rows(db_path):
+    insert_question(db_path, _make_question('1', 'a.xlsx'))
+    insert_question(db_path, _make_question('2', 'a.xlsx'))
+    insert_question(db_path, _make_question('3', 'b.xlsx'))
+    deleted = delete_questions_by_source(db_path, 'a.xlsx')
+    assert deleted == 2
+    remaining = get_all_questions(db_path)
+    assert len(remaining) == 1
+    assert remaining[0]['source_file'] == 'b.xlsx'
+
+def test_delete_questions_by_source_returns_zero_for_unknown(db_path):
+    deleted = delete_questions_by_source(db_path, 'nonexistent.xlsx')
+    assert deleted == 0
+
+def test_get_all_questions_filters_by_source_file(db_path):
+    insert_question(db_path, _make_question('1', 'a.xlsx'))
+    insert_question(db_path, _make_question('2', 'b.xlsx'))
+    result = get_all_questions(db_path, {'source_file': 'a.xlsx'})
+    assert len(result) == 1
+    assert result[0]['source_file'] == 'a.xlsx'
