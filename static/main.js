@@ -11,9 +11,26 @@ function escapeHtml(str) {
 function loadQuestions() {
   const keyword = document.getElementById('search')?.value || '';
   const difficulty = document.getElementById('filter-difficulty')?.value || '';
-  fetch(`/api/questions?keyword=${encodeURIComponent(keyword)}&difficulty=${encodeURIComponent(difficulty)}`)
+  const source = document.getElementById('filter-source')?.value || '';
+  fetch(`/api/questions?keyword=${encodeURIComponent(keyword)}&difficulty=${encodeURIComponent(difficulty)}&source_file=${encodeURIComponent(source)}`)
     .then(r => r.json())
     .then(renderQuestions);
+}
+
+function loadSourceFiles() {
+  fetch('/api/source-files')
+    .then(r => r.json())
+    .then(sources => {
+      const sel = document.getElementById('filter-source');
+      if (!sel) return;
+      const current = sel.value;
+      sel.innerHTML = '<option value="">所有來源</option>' +
+        sources.map(s => `<option value="${escapeHtml(s)}"${s === current ? ' selected' : ''}>${escapeHtml(s)}</option>`).join('');
+      if (current && !sources.includes(current)) {
+        sel.value = '';
+        document.getElementById('delete-source').style.display = 'none';
+      }
+    });
 }
 
 function renderQuestions(questions) {
@@ -69,6 +86,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('questions-body')?.addEventListener('change', e => {
       if (e.target.classList.contains('q-check')) updateSelectedCount();
+    });
+
+    loadSourceFiles();
+
+    document.getElementById('filter-source')?.addEventListener('change', function () {
+      const val = this.value;
+      const btn = document.getElementById('delete-source');
+      if (btn) btn.style.display = val ? 'inline-block' : 'none';
+      loadQuestions();
+    });
+
+    document.getElementById('delete-source')?.addEventListener('click', function () {
+      const source = document.getElementById('filter-source')?.value;
+      if (!source) return;
+      const rows = document.querySelectorAll('#questions-body tr');
+      const count = rows.length;
+      if (!confirm(`確定刪除「${source}」的所有 ${count} 題？此操作無法復原。`)) return;
+      fetch(`/api/questions/by-source?source_file=${encodeURIComponent(source)}`, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(() => {
+          loadSourceFiles();
+          loadQuestions();
+        })
+        .catch(() => alert('刪除失敗，請重試'));
     });
   }
 
