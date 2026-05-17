@@ -3,7 +3,8 @@ import uuid
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify, session
 from db import (init_db, insert_question, get_all_questions, get_question_by_id,
                 update_question, update_question_tags, delete_question,
-                save_quiz_result, get_quiz_result)
+                save_quiz_result, get_quiz_result,
+                get_source_files, delete_questions_by_source)
 from parser.pdf_parser import parse_pdf
 from parser.excel_handler import questions_to_excel, excel_to_questions
 from exporter.paper_exporter import export_to_word
@@ -102,6 +103,7 @@ def create_app(testing=False):
             'difficulty': request.args.get('difficulty', ''),
             'no_from': request.args.get('no_from', ''),
             'no_to': request.args.get('no_to', ''),
+            'source_file': request.args.get('source_file', ''),
         }
         filters = {k: v for k, v in filters.items() if v}
         questions = get_all_questions(None, filters)
@@ -251,6 +253,18 @@ def create_app(testing=False):
         pct = round(correct / total * 100) if total else 0
         return render_template('quiz_result.html', results=results,
                                correct=correct, total=total, pct=pct)
+
+    @app.route('/api/source-files')
+    def api_source_files():
+        return jsonify(get_source_files())
+
+    @app.route('/api/questions/by-source', methods=['DELETE'])
+    def api_delete_by_source():
+        source_file = request.args.get('source_file', '')
+        if not source_file:
+            return ('source_file parameter required', 400)
+        deleted = delete_questions_by_source(None, source_file)
+        return jsonify({'deleted': deleted})
 
     return app
 
