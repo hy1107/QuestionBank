@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const count = rows.length;
       if (!confirm(`確定刪除「${source}」的所有 ${count} 題？此操作無法復原。`)) return;
       fetch(`/api/questions/by-source?source_file=${encodeURIComponent(source)}`, { method: 'DELETE' })
-        .then(r => r.json())
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
         .then(() => {
           loadSourceFiles();
           loadQuestions();
